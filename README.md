@@ -115,8 +115,8 @@ The application stores data in the `laborlink_db` database using three primary m
 2. Check `workplace/src/main/resources/application.properties` and verify your username and password:
    ```properties
    spring.datasource.url=jdbc:mysql://localhost:3306/laborlink_db
-   spring.datasource.username=root
-   spring.datasource.password=root@123
+   spring.datasource.username=YOUR_USERNAME
+   spring.datasource.password=YOUR_PASSWORD
    spring.jpa.hibernate.ddl-auto=update
    ```
 
@@ -152,7 +152,7 @@ You can use these pre-configured user credentials to log in and test the system:
 
 * **Administrator Profile**
   * **Email**: `adminworkplace@gmail.com`
-  * **Password**: `admin123`
+  * **Password**: `ADMIN_PASSWORD`
 * **Skilled Worker (Electrician) Profile**
   * **Email**: `suresh@gmail.com`
   * **Password**: `password`
@@ -162,7 +162,4 @@ You can use these pre-configured user credentials to log in and test the system:
 
 ---
 
-## ⚠️ Important Implementation Notes
-* **Strict Validation**: The registration form and admin panel enforce strict validation filters. Any email address ending in `.cm` (a common typo for `.com`) is caught by frontend pattern checks and rejected with an *"invalid format"* alert.
-* **No Device Types**: Device type selections (e.g. keypad phone details) have been completely cleaned out of the database and views.
-* **Dynamic Menus**: Selecting a state in the registration menu dynamically filters and populates the districts menu for the user.
+

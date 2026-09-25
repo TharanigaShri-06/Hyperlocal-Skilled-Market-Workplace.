@@ -6,6 +6,7 @@ import RegisterPage from "./pages/RegisterPage";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import WorkerDashboard from "./pages/WorkerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import WorkerProfilePage from "./pages/WorkerProfilePage";
 
 
@@ -30,6 +31,11 @@ function App() {
         <Route
           path="/worker"
           element={<WorkerDashboard />}
+        />
+
+        <Route
+          path="/superadmin"
+          element={<SuperAdminDashboard />}
         />
 
         <Route

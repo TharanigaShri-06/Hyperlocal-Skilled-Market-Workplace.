@@ -1,8 +1,8 @@
 import React from "react";
 import "../styles/ConfirmModal.css";
 
-function ConfirmModal({ isOpen, title = "Confirm Action", message, onConfirm, onCancel }) {
-  if (!isOpen) return null;
+function ConfirmModal({ isOpen = true, title = "Confirm Action", message, onConfirm, onCancel }) {
+  if (isOpen === false) return null;
 
   return (
     <div className="confirm-modal-overlay">

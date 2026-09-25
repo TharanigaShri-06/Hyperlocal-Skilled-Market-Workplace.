@@ -96,11 +96,16 @@
   color: var(--text);
   font-size: 16px;
   pointer-events: none;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
 }
 
 .input-with-icon input {
   width: 100%;
-  padding: 14px 16px 14px 44px;
+  padding: 14px 46px 14px 50px !important;
   font-size: 15px;
   font-family: var(--sans);
   border: 1.5px solid var(--border);

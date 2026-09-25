@@ -106,7 +106,7 @@ function WorkerDashboard() {
             <div className="stat-badge">
               <div className="stat-label">Average Rating</div>
               <div className="stat-value" style={{ color: "#f59e0b" }}>
-                ⭐ {workerProfile?.rating ? workerProfile.rating.toFixed(1) : "5.0"}
+                ⭐ {workerProfile?.rating ? workerProfile.rating.toFixed(1) : "3.0"}
               </div>
             </div>
           </div>
@@ -170,7 +170,7 @@ function WorkerDashboard() {
         {/* ACTIVE PROPOSALS TAB */}
         {activeTab === "proposals" && (
           <div>
-            <h2 style={{ fontSize: "22px", color: "#082567", fontWeight: "800", marginBottom: "20px" }}>
+            <h2 style={{ fontSize: "22px", color: "#0f172a", fontWeight: "800", marginBottom: "20px" }}>
               Incoming Job Proposals
             </h2>
 
@@ -233,7 +233,7 @@ function WorkerDashboard() {
         {/* PROPOSALS HISTORY TAB */}
         {activeTab === "history" && (
           <div>
-            <h2 style={{ fontSize: "22px", color: "#082567", fontWeight: "800", marginBottom: "20px" }}>
+            <h2 style={{ fontSize: "22px", color: "#0f172a", fontWeight: "800", marginBottom: "20px" }}>
               Proposal History Log
             </h2>
 

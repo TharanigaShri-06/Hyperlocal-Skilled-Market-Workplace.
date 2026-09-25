@@ -313,7 +313,7 @@ function RegisterPage() {
                   <input
                     name="email"
                     type="email"
-                    placeholder="ex: sarvesh@gmail.com"
+                    placeholder="ex: user@example.com"
                     autoComplete="off"
                     value={formData.email}
                     onChange={handleChange}
@@ -329,7 +329,7 @@ function RegisterPage() {
                   <input
                     name="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="ex: Pass@123"
+                    placeholder="ex: Enter password"
                     autoComplete="off"
                     value={formData.password}
                     onChange={handleChange}

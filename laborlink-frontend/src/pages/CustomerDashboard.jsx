@@ -360,7 +360,7 @@ function CustomerDashboard() {
                           <td>
                             <div className="worker-rating-cell">
                               <span className="star-icon">⭐</span>
-                              <strong>{worker.rating ? worker.rating.toFixed(1) : "5.0"}</strong>
+                              <strong>{worker.rating ? worker.rating.toFixed(1) : "3.0"}</strong>
                               <span className="review-count">(10+ reviews)</span>
                             </div>
                           </td>

@@ -51,3 +51,53 @@ export const deleteUser = async (userId) => {
   const response = await axios.delete(`${BASE_URL}/${userId}`);
   return response.data;
 };
+
+// SuperAdmin operations
+export const createAdmin = async (adminData) => {
+  const response = await axios.post("http://localhost:8080/admin/create-admin", adminData);
+  return response.data;
+};
+
+export const updateAdmin = async (id, adminData) => {
+  const response = await axios.put(`http://localhost:8080/admin/admins/${id}`, adminData);
+  return response.data;
+};
+
+export const deleteAdmin = async (id) => {
+  const response = await axios.delete(`http://localhost:8080/admin/admins/${id}`);
+  return response.data;
+};
+
+export const getAdminStats = async () => {
+  const response = await axios.get("http://localhost:8080/admin/admin-stats");
+  return response.data;
+};
+
+// Admin delegated user operations
+export const registerUserByAdmin = async (userData, adminEmail) => {
+  const response = await axios.post("http://localhost:8080/admin/register-user", userData, {
+    params: { adminEmail }
+  });
+  return response.data;
+};
+
+export const getUsersByAdmin = async (adminEmail) => {
+  const response = await axios.get("http://localhost:8080/admin/my-users", {
+    params: { adminEmail }
+  });
+  return response.data;
+};
+
+export const updateUserByAdmin = async (id, userData, adminEmail) => {
+  const response = await axios.put(`http://localhost:8080/admin/users/${id}`, userData, {
+    params: { adminEmail }
+  });
+  return response.data;
+};
+
+export const deleteUserByAdmin = async (id, adminEmail) => {
+  const response = await axios.delete(`http://localhost:8080/admin/users/${id}`, {
+    params: { adminEmail }
+  });
+  return response.data;
+};

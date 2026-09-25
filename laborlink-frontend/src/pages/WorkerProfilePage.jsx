@@ -53,7 +53,7 @@ function WorkerProfilePage() {
         experience: Number(workerData.experience),
         location: workerData.location,
         availability: workerData.availability,
-        rating: 5.0, // default rating
+        rating: 3.0, // default rating
         user: {
           userId: savedUser.userId
         }

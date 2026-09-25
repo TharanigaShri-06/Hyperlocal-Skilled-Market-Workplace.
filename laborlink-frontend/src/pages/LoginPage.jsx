@@ -37,32 +37,38 @@ function LoginPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
+    const cleanEmail = email.trim().toLowerCase();
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(cleanEmail)) {
       showToast("Please enter a valid email address (e.g. name@example.com).", "warning");
       return;
     }
 
     try {
       // Step 1: Check if email exists
-      const exists = await checkEmailExists(email);
+      const exists = await checkEmailExists(cleanEmail);
       if (!exists) {
         showToast("This email is not registered yet. Redirecting to signup page...", "warning");
         setTimeout(() => {
-          navigate("/register", { state: { email, password } });
+          navigate("/register", { state: { email: cleanEmail, password } });
         }, 2000);
         return;
       }
 
       // Step 2: Attempt standard login
       const response = await loginUser({
-        email,
+        email: cleanEmail,
         password
       });
 
+      const userObj = {
+        ...response,
+        email: response.email || cleanEmail
+      };
+
       localStorage.setItem(
         "loggedInUser",
-        JSON.stringify(response)
+        JSON.stringify(userObj)
       );
 
       showToast(`Welcome back, ${response.name}!`, "success");
@@ -87,6 +93,8 @@ function LoginPage() {
             localStorage.setItem("registeredUser", JSON.stringify({ userId: response.userId }));
             navigate("/worker-profile");
           }
+        } else if (response.role === "SUPERADMIN") {
+          navigate("/superadmin");
         } else if (response.role === "ADMIN") {
           navigate("/admin");
         }
@@ -180,7 +188,7 @@ function LoginPage() {
                   <span className="input-icon">✉️</span>
                   <input
                     type="email"
-                    placeholder="ex: sarvesh@gmail.com"
+                    placeholder="ex: user@example.com"
                     autoComplete="off"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -195,7 +203,7 @@ function LoginPage() {
                   <span className="input-icon">🔒</span>
                   <input
                     type={showPassword ? "text" : "password"}
-                    placeholder="ex: Pass@123"
+                    placeholder="ex: Enter password"
                     autoComplete="off"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

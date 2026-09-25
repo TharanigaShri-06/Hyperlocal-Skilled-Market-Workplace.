@@ -47,7 +47,7 @@ public class BookingService {
             String customerName = savedBooking.getCustomer() != null ? savedBooking.getCustomer().getName() : "Customer";
             String customerEmail = savedBooking.getCustomer() != null ? savedBooking.getCustomer().getEmail() : null;
             String customerPhone = savedBooking.getCustomer() != null ? savedBooking.getCustomer().getPhone() : "N/A";
-            String date = savedBooking.getBookingDate() != null ? savedBooking.getBookingDate().toString() : "N/A";
+            String location = getLocationString(savedBooking);
             String desc = savedBooking.getWorkDescription();
 
             if (workerEmail != null && !workerEmail.trim().isEmpty()) {
@@ -58,7 +58,7 @@ public class BookingService {
                         + "- My Name: " + customerName + "\n"
                         + "- My Phone: " + customerPhone + "\n"
                         + "- My Email: " + (customerEmail != null ? customerEmail : "N/A") + "\n"
-                        + "- Scheduled Date: " + date + "\n\n"
+                        + "- Location: " + location + "\n\n"
                         + "Job Description:\n"
                         + "\"" + desc + "\"\n\n"
                         + "Please log in to your SkillLocal Dashboard to accept or reject this request.\n\n"
@@ -87,18 +87,21 @@ public class BookingService {
                 String workerName = savedBooking.getWorker().getUser().getName();
                 String customerName = savedBooking.getCustomer() != null ? savedBooking.getCustomer().getName() : "Customer";
                 String customerEmail = savedBooking.getCustomer() != null ? savedBooking.getCustomer().getEmail() : null;
+                String location = getLocationString(savedBooking);
                 String desc = savedBooking.getWorkDescription();
 
                 if (customerEmail != null && !customerEmail.trim().isEmpty()) {
-                    String subject = "Booking Accepted - " + workerName;
+                    String subject = "Job Booking Accepted by " + workerName;
                     String body = "Hello " + customerName + ",\n\n"
-                            + "I have accepted your booking proposal on SkillLocal for the following job:\n"
-                            + "\"" + desc + "\"\n\n"
-                            + "I will be available on the scheduled date. Please coordinate with me at your convenience.\n"
-                            + "My Phone: " + (savedBooking.getWorker().getUser().getPhone() != null ? savedBooking.getWorker().getUser().getPhone() : "N/A") + "\n"
-                            + "My Email: " + workerEmail + "\n\n"
+                            + "Great news! The worker " + workerName + " has accepted your job booking request on SkillLocal.\n\n"
+                            + "Job Details:\n"
+                            + "- Job Description: \"" + desc + "\"\n"
+                            + "- Location: " + location + "\n"
+                            + "- Worker Phone: " + (savedBooking.getWorker().getUser().getPhone() != null ? savedBooking.getWorker().getUser().getPhone() : "N/A") + "\n"
+                            + "- Worker Email: " + workerEmail + "\n\n"
+                            + "Please coordinate directly with the worker for further details.\n\n"
                             + "Best regards,\n"
-                            + workerName + " (via SkillLocal)";
+                            + "SkillLocal Marketplace";
                     emailService.sendEmail(customerEmail, workerEmail, workerName, workerEmail, subject, body);
                 }
             }
@@ -124,13 +127,12 @@ public class BookingService {
                 String desc = savedBooking.getWorkDescription();
 
                 if (customerEmail != null && !customerEmail.trim().isEmpty()) {
-                    String subject = "Booking Declined - " + workerName;
+                    String subject = "Job Booking Rejected by " + workerName;
                     String body = "Hello " + customerName + ",\n\n"
-                            + "I am writing to let you know that I have declined your booking proposal on SkillLocal for the following job:\n"
-                            + "\"" + desc + "\"\n\n"
-                            + "I apologize for any inconvenience caused. You can search for other available workers on the SkillLocal Dashboard.\n\n"
+                            + "Notice: The job booking request you placed for \"" + desc + "\" has been rejected by the worker " + workerName + ".\n\n"
+                            + "You can browse other available skilled workers on SkillLocal to place a new request.\n\n"
                             + "Best regards,\n"
-                            + workerName + " (via SkillLocal)";
+                            + "SkillLocal Marketplace";
                     emailService.sendEmail(customerEmail, workerEmail, workerName, workerEmail, subject, body);
                 }
             }
@@ -170,12 +172,40 @@ public class BookingService {
                         count++;
                     }
                 }
-                double averageRating = count > 0 ? sum / count : 5.0;
+                double averageRating = count > 0 ? (sum / count) : 3.0;
+                averageRating = Math.round(averageRating * 10.0) / 10.0;
                 worker.setRating(averageRating);
                 workerProfileRepository.saveAndFlush(worker);
             }
             return savedBooking;
         }
         return null;
+    }
+
+    private String getLocationString(Booking booking) {
+        if (booking.getLocation() != null && !booking.getLocation().trim().isEmpty()) {
+            return booking.getLocation().trim();
+        }
+        if (booking.getCustomer() != null) {
+            StringBuilder sb = new StringBuilder();
+            if (booking.getCustomer().getCity() != null && !booking.getCustomer().getCity().trim().isEmpty()) {
+                sb.append(booking.getCustomer().getCity().trim());
+            }
+            if (booking.getCustomer().getDistrict() != null && !booking.getCustomer().getDistrict().trim().isEmpty()) {
+                if (sb.length() > 0) sb.append(", ");
+                sb.append(booking.getCustomer().getDistrict().trim());
+            }
+            if (booking.getCustomer().getState() != null && !booking.getCustomer().getState().trim().isEmpty()) {
+                if (sb.length() > 0) sb.append(", ");
+                sb.append(booking.getCustomer().getState().trim());
+            }
+            if (sb.length() > 0) {
+                return sb.toString();
+            }
+        }
+        if (booking.getWorker() != null && booking.getWorker().getLocation() != null && !booking.getWorker().getLocation().trim().isEmpty()) {
+            return booking.getWorker().getLocation().trim();
+        }
+        return "N/A";
     }
 }

@@ -10,6 +10,9 @@ public class UserResponse {
     private String district;
     private String state;
     private String role;
+    private String createdByAdminEmail;
+    private Long createdByAdminId;
+    private String createdByAdminName;
 
     public UserResponse() {
     }
@@ -22,6 +25,32 @@ public class UserResponse {
             String district,
             String state,
             String role) {
+        this(userId, name, email, phone, city, district, state, role, null, null, null);
+    }
+
+    public UserResponse(Long userId,
+            String name,
+            String email,
+            String phone,
+            String city,
+            String district,
+            String state,
+            String role,
+            String createdByAdminEmail) {
+        this(userId, name, email, phone, city, district, state, role, createdByAdminEmail, null, null);
+    }
+
+    public UserResponse(Long userId,
+            String name,
+            String email,
+            String phone,
+            String city,
+            String district,
+            String state,
+            String role,
+            String createdByAdminEmail,
+            Long createdByAdminId,
+            String createdByAdminName) {
 
         this.userId = userId;
         this.name = name;
@@ -31,6 +60,9 @@ public class UserResponse {
         this.district = district;
         this.state = state;
         this.role = role;
+        this.createdByAdminEmail = createdByAdminEmail;
+        this.createdByAdminId = createdByAdminId;
+        this.createdByAdminName = createdByAdminName;
     }
 
     public Long getUserId() {
@@ -63,5 +95,17 @@ public class UserResponse {
 
     public String getRole() {
         return role;
+    }
+
+    public String getCreatedByAdminEmail() {
+        return createdByAdminEmail;
+    }
+
+    public Long getCreatedByAdminId() {
+        return createdByAdminId;
+    }
+
+    public String getCreatedByAdminName() {
+        return createdByAdminName;
     }
 }

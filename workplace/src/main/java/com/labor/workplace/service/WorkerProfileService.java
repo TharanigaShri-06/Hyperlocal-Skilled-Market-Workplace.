@@ -24,6 +24,9 @@ public class WorkerProfileService {
     }
 
     public WorkerProfile saveWorkerProfile(WorkerProfile workerProfile) {
+        if (workerProfile.getRating() <= 0) {
+            workerProfile.setRating(3.0);
+        }
         // Resolve full User details from database
         if (workerProfile.getUser() != null && workerProfile.getUser().getUserId() != null) {
             User user = userRepository.findById(workerProfile.getUser().getUserId()).orElse(null);

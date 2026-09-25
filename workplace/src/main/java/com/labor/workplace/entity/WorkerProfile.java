@@ -18,7 +18,7 @@ public class WorkerProfile {
 
     private String availability;
 
-    private double rating;
+    private double rating = 3.0;
 
     @OneToOne
     @JoinColumn(name = "user_id")

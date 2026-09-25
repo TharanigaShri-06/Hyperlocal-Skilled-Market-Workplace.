@@ -1,17 +1,17 @@
-
 package com.labor.workplace.service;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.stream.Collectors;
+
 import com.labor.workplace.entity.User;
 import com.labor.workplace.entity.WorkerProfile;
 import com.labor.workplace.entity.Booking;
 import com.labor.workplace.repository.UserRepository;
 import com.labor.workplace.repository.WorkerProfileRepository;
 import com.labor.workplace.repository.BookingRepository;
-import java.util.Optional;
 import com.labor.workplace.dto.UserResponse;
 import com.labor.workplace.dto.LoginRequest;
 import com.labor.workplace.dto.LoginResponse;
@@ -33,8 +33,8 @@ public class UserService {
     }
 
     public User saveUser(User user) {
-        if ("ADMIN".equalsIgnoreCase(user.getRole())) {
-            throw new RuntimeException("Registration for ADMIN role is prohibited.");
+        if ("ADMIN".equalsIgnoreCase(user.getRole()) || "SUPERADMIN".equalsIgnoreCase(user.getRole())) {
+            throw new RuntimeException("Registration for ADMIN or SUPERADMIN role is prohibited.");
         }
         if (user.getPhone() == null || !user.getPhone().matches("^\\d{10}$")) {
             throw new RuntimeException("Phone number must contain exactly 10 digits");
@@ -49,6 +49,62 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public User saveAdmin(User admin) {
+        admin.setRole("ADMIN");
+        if (admin.getPhone() == null || !admin.getPhone().matches("^\\d{10}$")) {
+            throw new RuntimeException("Phone number must contain exactly 10 digits");
+        }
+        if (admin.getEmail() != null) {
+            admin.setEmail(admin.getEmail().trim().toLowerCase());
+        }
+        if (admin.getPrivateQuestion() == null || admin.getPrivateQuestion().trim().isEmpty()) {
+            admin.setPrivateQuestion("What city were you born in?");
+        }
+        if (admin.getSecurityAnswer() == null || admin.getSecurityAnswer().trim().isEmpty()) {
+            admin.setSecurityAnswer(admin.getCity() != null ? admin.getCity() : "Admin");
+        }
+        Optional<User> existing = userRepository.findByEmail(admin.getEmail());
+        if (existing.isPresent()) {
+            throw new RuntimeException("Email is already registered!");
+        }
+        return userRepository.save(admin);
+    }
+
+    public User saveUserByAdmin(User user, String adminEmail) {
+        if ("ADMIN".equalsIgnoreCase(user.getRole()) || "SUPERADMIN".equalsIgnoreCase(user.getRole())) {
+            throw new RuntimeException("Only WORKER or CUSTOMER users can be registered by Admin.");
+        }
+        if (user.getPhone() == null || !user.getPhone().matches("^\\d{10}$")) {
+            throw new RuntimeException("Phone number must contain exactly 10 digits");
+        }
+
+        String cleanAdminEmail = adminEmail != null ? adminEmail.trim().toLowerCase() : null;
+
+        if (user.getEmail() != null && !user.getEmail().trim().isEmpty()) {
+            user.setEmail(user.getEmail().trim().toLowerCase());
+        } else if (cleanAdminEmail != null) {
+            user.setEmail(cleanAdminEmail);
+        } else {
+            throw new RuntimeException("Email is required");
+        }
+
+        user.setCreatedByAdminEmail(cleanAdminEmail);
+
+        if (cleanAdminEmail != null) {
+            Optional<User> adminOpt = userRepository.findAll().stream()
+                    .filter(u -> u.getEmail() != null && u.getEmail().trim().equalsIgnoreCase(cleanAdminEmail) &&
+                            ("ADMIN".equalsIgnoreCase(u.getRole()) || "SUPERADMIN".equalsIgnoreCase(u.getRole())))
+                    .findFirst();
+            if (adminOpt.isPresent()) {
+                User admin = adminOpt.get();
+                user.setCreatedByAdminId(admin.getUserId());
+                user.setCreatedByAdminName(admin.getName());
+            }
+        }
+
+        return userRepository.save(user);
+    }
+
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
@@ -58,69 +114,81 @@ public class UserService {
     }
 
     public User updateUser(Long id, User updatedUser) {
-
         User existingUser = userRepository.findById(id).orElse(null);
-
         if (existingUser != null) {
             if (updatedUser.getPhone() == null || !updatedUser.getPhone().matches("^\\d{10}$")) {
                 throw new RuntimeException("Phone number must contain exactly 10 digits");
             }
-
             existingUser.setName(updatedUser.getName());
-
-            existingUser.setEmail(updatedUser.getEmail());
-
+            existingUser.setEmail(updatedUser.getEmail() != null ? updatedUser.getEmail().trim().toLowerCase() : existingUser.getEmail());
             existingUser.setPhone(updatedUser.getPhone());
-
-            existingUser.setPassword(updatedUser.getPassword());
-
+            if (updatedUser.getPassword() != null && !updatedUser.getPassword().trim().isEmpty()) {
+                existingUser.setPassword(updatedUser.getPassword());
+            }
             existingUser.setCity(updatedUser.getCity());
-
             existingUser.setDistrict(updatedUser.getDistrict());
-
             existingUser.setState(updatedUser.getState());
-
-            existingUser.setRole(updatedUser.getRole());
-
+            if (updatedUser.getRole() != null) {
+                existingUser.setRole(updatedUser.getRole());
+            }
             if (updatedUser.getPrivateQuestion() != null) {
                 existingUser.setPrivateQuestion(updatedUser.getPrivateQuestion());
             }
             if (updatedUser.getSecurityAnswer() != null) {
                 existingUser.setSecurityAnswer(updatedUser.getSecurityAnswer());
             }
-
             return userRepository.save(existingUser);
         }
+        return null;
+    }
 
+    public User updateUserByAdmin(Long id, User updatedUser, String adminEmail) {
+        User existingUser = userRepository.findById(id).orElse(null);
+        if (existingUser != null) {
+            if (adminEmail != null && existingUser.getCreatedByAdminEmail() != null
+                    && !existingUser.getCreatedByAdminEmail().equalsIgnoreCase(adminEmail.trim())) {
+                throw new RuntimeException("Unauthorized: You can only update users registered by your email ID.");
+            }
+            return updateUser(id, updatedUser);
+        }
         return null;
     }
 
     public boolean checkEmailExists(String email) {
         if (email == null) return false;
-        Optional<User> userOpt = userRepository.findByEmail(email.trim().toLowerCase());
-        return userOpt.isPresent();
+        String clean = email.trim().toLowerCase();
+        return userRepository.findAll().stream().anyMatch(u -> u.getEmail() != null && clean.equalsIgnoreCase(u.getEmail().trim()));
     }
 
     public String getSecurityQuestion(String email) {
         if (email == null) return null;
-        Optional<User> userOpt = userRepository.findByEmail(email.trim().toLowerCase());
-        if (userOpt.isPresent()) {
-            return userOpt.get().getPrivateQuestion();
-        }
-        return null;
+        String clean = email.trim().toLowerCase();
+        return userRepository.findAll().stream()
+                .filter(u -> u.getEmail() != null && clean.equalsIgnoreCase(u.getEmail().trim()))
+                .map(User::getPrivateQuestion)
+                .filter(q -> q != null && !q.trim().isEmpty())
+                .findFirst()
+                .orElse(null);
     }
 
     public boolean resetPassword(String email, String securityAnswer, String newPassword) {
         if (email == null) throw new RuntimeException("Email is required");
-        Optional<User> userOpt = userRepository.findByEmail(email.trim().toLowerCase());
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            if (user.getSecurityAnswer() == null || !user.getSecurityAnswer().equalsIgnoreCase(securityAnswer.trim())) {
-                throw new RuntimeException("Invalid security answer!");
+        String clean = email.trim().toLowerCase();
+        List<User> users = userRepository.findAll().stream()
+                .filter(u -> u.getEmail() != null && clean.equalsIgnoreCase(u.getEmail().trim()))
+                .collect(Collectors.toList());
+
+        if (!users.isEmpty()) {
+            boolean updatedAny = false;
+            for (User u : users) {
+                if (u.getSecurityAnswer() != null && u.getSecurityAnswer().trim().equalsIgnoreCase(securityAnswer.trim())) {
+                    u.setPassword(newPassword);
+                    userRepository.save(u);
+                    updatedAny = true;
+                }
             }
-            user.setPassword(newPassword);
-            userRepository.save(user);
-            return true;
+            if (updatedAny) return true;
+            throw new RuntimeException("Invalid security answer!");
         }
         throw new RuntimeException("Email not found!");
     }
@@ -132,48 +200,160 @@ public class UserService {
             return "User not found";
         }
 
-        // 1. If worker, delete worker profile & bookings
-        if ("WORKER".equalsIgnoreCase(user.getRole())) {
+        if ("ADMIN".equalsIgnoreCase(user.getRole())) {
+            String adminEmail = user.getEmail() != null ? user.getEmail().trim().toLowerCase() : "";
+            Long adminId = user.getUserId();
+
+            // Find all user accounts associated with this admin email/id (managed workers, worker profiles with admin email, customers)
+            List<User> managedUsers = userRepository.findAll().stream()
+                    .filter(u -> !u.getUserId().equals(adminId) && (
+                            (u.getCreatedByAdminEmail() != null && u.getCreatedByAdminEmail().trim().equalsIgnoreCase(adminEmail)) ||
+                            (u.getCreatedByAdminId() != null && u.getCreatedByAdminId().equals(adminId)) ||
+                            (u.getEmail() != null && u.getEmail().trim().equalsIgnoreCase(adminEmail))
+                    ))
+                    .collect(Collectors.toList());
+
+            for (User managedUser : managedUsers) {
+                WorkerProfile profile = workerProfileRepository.findByUserUserId(managedUser.getUserId());
+                if (profile != null) {
+                    List<Booking> bookings = bookingRepository.findByWorkerWorkerId(profile.getWorkerId());
+                    if (!bookings.isEmpty()) {
+                        bookingRepository.deleteAll(bookings);
+                    }
+                    workerProfileRepository.delete(profile);
+                }
+                List<Booking> customerBookings = bookingRepository.findByCustomerUserId(managedUser.getUserId());
+                if (!customerBookings.isEmpty()) {
+                    bookingRepository.deleteAll(customerBookings);
+                }
+                userRepository.delete(managedUser);
+            }
+
+            // Clean up any remaining worker profiles or bookings associated with this admin or matching adminEmail
+            List<WorkerProfile> orphanProfiles = workerProfileRepository.findAll().stream()
+                    .filter(wp -> wp.getUser() == null || wp.getUser().getUserId().equals(adminId) ||
+                            (wp.getUser().getEmail() != null && wp.getUser().getEmail().trim().equalsIgnoreCase(adminEmail)) ||
+                            (wp.getUser().getCreatedByAdminEmail() != null && wp.getUser().getCreatedByAdminEmail().trim().equalsIgnoreCase(adminEmail)) ||
+                            (wp.getUser().getCreatedByAdminId() != null && wp.getUser().getCreatedByAdminId().equals(adminId)))
+                    .collect(Collectors.toList());
+
+            for (WorkerProfile wp : orphanProfiles) {
+                List<Booking> bookings = bookingRepository.findByWorkerWorkerId(wp.getWorkerId());
+                if (!bookings.isEmpty()) {
+                    bookingRepository.deleteAll(bookings);
+                }
+                workerProfileRepository.delete(wp);
+            }
+
+            List<Booking> adminCustomerBookings = bookingRepository.findByCustomerUserId(adminId);
+            if (!adminCustomerBookings.isEmpty()) {
+                bookingRepository.deleteAll(adminCustomerBookings);
+            }
+        } else if ("WORKER".equalsIgnoreCase(user.getRole())) {
             WorkerProfile profile = workerProfileRepository.findByUserUserId(id);
             if (profile != null) {
                 List<Booking> bookings = bookingRepository.findByWorkerWorkerId(profile.getWorkerId());
-                bookingRepository.deleteAll(bookings);
+                if (!bookings.isEmpty()) {
+                    bookingRepository.deleteAll(bookings);
+                }
                 workerProfileRepository.delete(profile);
             }
         } else if ("CUSTOMER".equalsIgnoreCase(user.getRole())) {
-            // 2. If customer, delete customer bookings
             List<Booking> bookings = bookingRepository.findByCustomerUserId(id);
-            bookingRepository.deleteAll(bookings);
+            if (!bookings.isEmpty()) {
+                bookingRepository.deleteAll(bookings);
+            }
         }
 
-        // 3. Delete user
         userRepository.delete(user);
         return "User Deleted Successfully";
     }
 
-    public LoginResponse login(
-            LoginRequest request) {
-        if (request.getEmail() == null) {
+    @Transactional
+    public String deleteUserByAdmin(Long id, String adminEmail) {
+        User existingUser = userRepository.findById(id).orElse(null);
+        if (existingUser == null) {
+            return "User not found";
+        }
+        if (adminEmail != null && !adminEmail.trim().isEmpty()) {
+            String cleanAdminEmail = adminEmail.trim().toLowerCase();
+            String createdBy = existingUser.getCreatedByAdminEmail() != null ? existingUser.getCreatedByAdminEmail().trim().toLowerCase() : "";
+            String userEmail = existingUser.getEmail() != null ? existingUser.getEmail().trim().toLowerCase() : "";
+
+            boolean isCreatedByEmailMatch = createdBy.equalsIgnoreCase(cleanAdminEmail);
+            boolean isUserEmailMatch = userEmail.equalsIgnoreCase(cleanAdminEmail);
+            boolean isCreatedByIdMatch = false;
+
+            if (existingUser.getCreatedByAdminId() != null) {
+                Optional<User> adminOpt = userRepository.findById(existingUser.getCreatedByAdminId());
+                if (adminOpt.isPresent() && adminOpt.get().getEmail() != null
+                        && adminOpt.get().getEmail().trim().equalsIgnoreCase(cleanAdminEmail)) {
+                    isCreatedByIdMatch = true;
+                }
+            }
+
+            if (!isCreatedByEmailMatch && !isUserEmailMatch && !isCreatedByIdMatch) {
+                throw new RuntimeException("Unauthorized: You can only delete worker accounts created under your admin email ID.");
+            }
+        }
+        return deleteUser(id);
+    }
+
+    public LoginResponse login(LoginRequest request) {
+        if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
             throw new RuntimeException("Email is required");
         }
-        String email = request.getEmail().trim().toLowerCase();
-        Optional<User> userOpt = userRepository.findByEmail(email);
-        if (userOpt.isPresent()) {
-            User u = userOpt.get();
-            if (!u.getPassword().equals(request.getPassword())) {
+        if (request.getPassword() == null || request.getPassword().isEmpty()) {
+            throw new RuntimeException("Password is required");
+        }
+        String cleanEmail = request.getEmail().trim().toLowerCase();
+
+        List<User> matchingUsers = userRepository.findAll().stream()
+                .filter(u -> cleanEmail.equalsIgnoreCase(u.getEmail() != null ? u.getEmail().trim() : ""))
+                .collect(Collectors.toList());
+
+        if (!matchingUsers.isEmpty()) {
+            User user = matchingUsers.stream()
+                    .filter(u -> "SUPERADMIN".equalsIgnoreCase(u.getRole()) || "ADMIN".equalsIgnoreCase(u.getRole()))
+                    .findFirst()
+                    .orElse(matchingUsers.get(0));
+
+            if (!user.getPassword().equals(request.getPassword())) {
                 throw new RuntimeException("Invalid Password");
             }
             return new LoginResponse(
-                    u.getUserId(),
-                    u.getName(),
-                    u.getRole());
+                    user.getUserId(),
+                    user.getName(),
+                    user.getRole(),
+                    user.getEmail());
         }
 
         throw new RuntimeException("Email not registered");
     }
 
-    public UserResponse convertToResponse(User user) {
+    public List<UserResponse> getUsersCreatedByAdmin(String adminEmail) {
+        if (adminEmail == null || adminEmail.trim().isEmpty()) return List.of();
+        String cleanEmail = adminEmail.trim().toLowerCase();
 
+        Long adminId = userRepository.findAll().stream()
+                .filter(u -> u.getEmail() != null && u.getEmail().trim().equalsIgnoreCase(cleanEmail) &&
+                        ("ADMIN".equalsIgnoreCase(u.getRole()) || "SUPERADMIN".equalsIgnoreCase(u.getRole())))
+                .map(User::getUserId)
+                .findFirst()
+                .orElse(null);
+
+        return userRepository.findAll().stream()
+                .filter(u -> (
+                        (u.getCreatedByAdminEmail() != null && u.getCreatedByAdminEmail().trim().equalsIgnoreCase(cleanEmail)) ||
+                        (u.getEmail() != null && u.getEmail().trim().equalsIgnoreCase(cleanEmail)) ||
+                        (adminId != null && u.getCreatedByAdminId() != null && u.getCreatedByAdminId().equals(adminId))
+                ))
+                .filter(u -> !"SUPERADMIN".equalsIgnoreCase(u.getRole()) && !(adminId != null && u.getUserId().equals(adminId)))
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public UserResponse convertToResponse(User user) {
         return new UserResponse(
                 user.getUserId(),
                 user.getName(),
@@ -182,11 +362,13 @@ public class UserService {
                 user.getCity(),
                 user.getDistrict(),
                 user.getState(),
-                user.getRole());
+                user.getRole(),
+                user.getCreatedByAdminEmail(),
+                user.getCreatedByAdminId(),
+                user.getCreatedByAdminName());
     }
 
     public List<UserResponse> getAllUserResponses() {
-
         return userRepository.findAll()
                 .stream()
                 .map(this::convertToResponse)
@@ -197,24 +379,65 @@ public class UserService {
         Optional<User> adminOpt = userRepository.findByEmail("adminworkplace@gmail.com");
         if (adminOpt.isEmpty()) {
             User admin = new User();
-            admin.setName("System Admin");
+            admin.setName("Super Admin");
             admin.setEmail("adminworkplace@gmail.com");
             admin.setPhone("9999999999");
             admin.setPassword("admin123");
             admin.setCity("Chennai");
             admin.setDistrict("Chennai");
             admin.setState("Tamil Nadu");
-            admin.setRole("ADMIN");
+            admin.setRole("SUPERADMIN");
             admin.setPrivateQuestion("What city were you born in?");
             admin.setSecurityAnswer("Chennai");
             userRepository.save(admin);
-            System.out.println("System Admin seeded successfully: adminworkplace@gmail.com / admin123");
+            System.out.println("Super Admin seeded successfully: adminworkplace@gmail.com / admin123");
+        } else {
+            User admin = adminOpt.get();
+            if (!"SUPERADMIN".equalsIgnoreCase(admin.getRole())) {
+                admin.setRole("SUPERADMIN");
+                userRepository.save(admin);
+                System.out.println("Updated existing system admin to SUPERADMIN: adminworkplace@gmail.com");
+            }
         }
+    }
+
+    public List<java.util.Map<String, Object>> getAdminStats() {
+        List<User> admins = userRepository.findByRole("ADMIN");
+        List<java.util.Map<String, Object>> statsList = new java.util.ArrayList<>();
+
+        for (User admin : admins) {
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("adminId", admin.getUserId());
+            map.put("name", admin.getName());
+            map.put("email", admin.getEmail());
+            map.put("phone", admin.getPhone());
+            map.put("city", admin.getCity());
+            map.put("district", admin.getDistrict());
+            map.put("state", admin.getState());
+
+            List<User> createdUsers = userRepository.findByCreatedByAdminEmail(admin.getEmail().toLowerCase());
+            List<WorkerProfile> registeredWorkers = new java.util.ArrayList<>();
+            for (User u : createdUsers) {
+                if ("WORKER".equalsIgnoreCase(u.getRole())) {
+                    WorkerProfile wp = workerProfileRepository.findByUserUserId(u.getUserId());
+                    if (wp != null) {
+                        registeredWorkers.add(wp);
+                    }
+                }
+            }
+
+            map.put("registeredWorkerCount", registeredWorkers.size());
+            map.put("registeredWorkers", registeredWorkers);
+            map.put("totalUsersCount", createdUsers.size());
+
+            statsList.add(map);
+        }
+        return statsList;
     }
 
     public void seedUsersAndWorkers(WorkerProfileRepository workerProfileRepository) {
         long nonAdminCount = userRepository.findAll().stream()
-                .filter(u -> !"ADMIN".equalsIgnoreCase(u.getRole()))
+                .filter(u -> !"ADMIN".equalsIgnoreCase(u.getRole()) && !"SUPERADMIN".equalsIgnoreCase(u.getRole()))
                 .count();
 
         if (nonAdminCount == 0) {

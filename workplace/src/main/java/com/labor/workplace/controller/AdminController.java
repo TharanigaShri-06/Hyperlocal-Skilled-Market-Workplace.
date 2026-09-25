@@ -2,11 +2,10 @@ package com.labor.workplace.controller;
 
 import java.util.List;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.labor.workplace.entity.Booking;
+import com.labor.workplace.entity.User;
 import com.labor.workplace.entity.WorkerProfile;
 import com.labor.workplace.service.BookingService;
 import com.labor.workplace.service.UserService;
@@ -44,5 +43,49 @@ public class AdminController {
     @GetMapping("/bookings")
     public List<Booking> getAllBookings() {
         return bookingService.getAllBookings();
+    }
+
+    // --- SUPERADMIN ENDPOINTS ---
+
+    @PostMapping("/create-admin")
+    public User createAdmin(@RequestBody User admin) {
+        return userService.saveAdmin(admin);
+    }
+
+    @PutMapping("/admins/{id}")
+    public User updateAdmin(@PathVariable Long id, @RequestBody User admin) {
+        return userService.updateUser(id, admin);
+    }
+
+    @DeleteMapping("/admins/{id}")
+    public String deleteAdmin(@PathVariable Long id) {
+        return userService.deleteUser(id);
+    }
+
+    @GetMapping("/admin-stats")
+    public List<java.util.Map<String, Object>> getAdminStats() {
+        return userService.getAdminStats();
+    }
+
+    // --- ADMIN DELEGATED USER MANAGEMENT ENDPOINTS ---
+
+    @PostMapping("/register-user")
+    public User registerUserByAdmin(@RequestBody User user, @RequestParam(required = false) String adminEmail) {
+        return userService.saveUserByAdmin(user, adminEmail);
+    }
+
+    @GetMapping("/my-users")
+    public List<UserResponse> getMyUsers(@RequestParam String adminEmail) {
+        return userService.getUsersCreatedByAdmin(adminEmail);
+    }
+
+    @PutMapping("/users/{id}")
+    public User updateUserByAdmin(@PathVariable Long id, @RequestBody User user, @RequestParam(required = false) String adminEmail) {
+        return userService.updateUserByAdmin(id, user, adminEmail);
+    }
+
+    @DeleteMapping("/users/{id}")
+    public String deleteUserByAdmin(@PathVariable Long id, @RequestParam(required = false) String adminEmail) {
+        return userService.deleteUserByAdmin(id, adminEmail);
     }
 }

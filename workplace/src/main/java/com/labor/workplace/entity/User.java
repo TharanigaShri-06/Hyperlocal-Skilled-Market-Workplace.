@@ -21,7 +21,7 @@ public class User {
     @NotBlank(message = "Email is required")
     @Email(message = "Enter valid email")
     @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", message = "Please enter a valid email address (e.g. name@example.com)")
-    @Column(unique = true)
+    @Column
     private String email;
 
     @Pattern(regexp = "^[0-9]{10}$", message = "Phone number must contain exactly 10 digits")
@@ -43,6 +43,12 @@ public class User {
     private String privateQuestion;
 
     private String securityAnswer;
+
+    private String createdByAdminEmail;
+
+    private Long createdByAdminId;
+
+    private String createdByAdminName;
 
     public User() {
     }
@@ -148,5 +154,29 @@ public class User {
 
     public void setSecurityAnswer(String securityAnswer) {
         this.securityAnswer = securityAnswer;
+    }
+
+    public String getCreatedByAdminEmail() {
+        return createdByAdminEmail;
+    }
+
+    public void setCreatedByAdminEmail(String createdByAdminEmail) {
+        this.createdByAdminEmail = createdByAdminEmail;
+    }
+
+    public Long getCreatedByAdminId() {
+        return createdByAdminId;
+    }
+
+    public void setCreatedByAdminId(Long createdByAdminId) {
+        this.createdByAdminId = createdByAdminId;
+    }
+
+    public String getCreatedByAdminName() {
+        return createdByAdminName;
+    }
+
+    public void setCreatedByAdminName(String createdByAdminName) {
+        this.createdByAdminName = createdByAdminName;
     }
 }
